@@ -5,7 +5,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { loginUser, clearError } from '../../store/slices/authSlice';
 import { toast } from 'react-toastify';
 
-const DEMO = { email: 'admin@mason.demo', password: 'Admin@1234' };
+const DEMOS = [
+  { label: 'Admin', email: 'admin@mason.demo', password: 'Admin@1234' },
+  { label: 'Project Manager', email: 'pm@mason.demo', password: 'Admin@1234' },
+  { label: 'Site Engineer', email: 'engineer@mason.demo', password: 'Admin@1234' },
+  { label: 'Accounts', email: 'accounts@mason.demo', password: 'Admin@1234' },
+];
 
 export default function Login() {
   const dispatch = useDispatch();
@@ -14,9 +19,9 @@ export default function Login() {
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm();
 
-  const fillDemo = () => {
-    setValue('email', DEMO.email);
-    setValue('password', DEMO.password);
+  const fillDemo = (demo) => {
+    setValue('email', demo.email);
+    setValue('password', demo.password);
   };
 
   useEffect(() => {
@@ -43,16 +48,13 @@ export default function Login() {
         <div className="card shadow-sm border-0">
           <div className="card-body p-4">
             <div className="alert alert-info py-2 mb-3 small">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <i className="bi bi-info-circle me-1" />
-                  <strong>Demo credentials</strong><br />
-                  <span className="font-monospace">{DEMO.email}</span><br />
-                  <span className="font-monospace">{DEMO.password}</span>
-                </div>
-                <button type="button" className="btn btn-sm btn-outline-primary ms-2" onClick={fillDemo}>
-                  Fill
-                </button>
+              <div className="mb-1"><i className="bi bi-info-circle me-1" /><strong>Demo accounts</strong> — password: <span className="font-monospace">Admin@1234</span></div>
+              <div className="d-flex flex-wrap gap-1 mt-2">
+                {DEMOS.map((d) => (
+                  <button key={d.email} type="button" className="btn btn-sm btn-outline-primary" onClick={() => fillDemo(d)}>
+                    {d.label}
+                  </button>
+                ))}
               </div>
             </div>
             {error?.general && (

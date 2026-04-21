@@ -11,7 +11,6 @@ const navItems = [
   { path: '/purchase-orders',icon: 'bi-receipt-cutoff', label: 'Purchase Orders' },
   { path: '/indents',        icon: 'bi-clipboard-check',label: 'Indents' },
   { path: '/laborers',       icon: 'bi-people-fill',    label: 'Labor' },
-  { path: '/subcontractors', icon: 'bi-person-badge',   label: 'Subcontractors' },
   { path: '/equipment',      icon: 'bi-truck',          label: 'Equipment' },
   { path: '/expenses',       icon: 'bi-cash-stack',     label: 'Expenses' },
   { path: '/users',          icon: 'bi-person-gear',    label: 'Users' },

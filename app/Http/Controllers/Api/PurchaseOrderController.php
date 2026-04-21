@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\PurchaseOrder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class PurchaseOrderController extends Controller
 {
@@ -88,6 +91,8 @@ class PurchaseOrderController extends Controller
             return $po->load(['vendor', 'project', 'items.material']);
         });
 
+        $this->syncExpenseForPO($po, $request->user()->id);
+
         return response()->json(['message' => 'Purchase order created.', 'data' => $po], 201);
     }
 
@@ -149,6 +154,9 @@ class PurchaseOrderController extends Controller
             $purchaseOrder->update($validated);
         });
 
+        $purchaseOrder->load(['vendor', 'project', 'items.material']);
+        $this->syncExpenseForPO($purchaseOrder, $request->user()->id);
+
         return response()->json(['message' => 'Purchase order updated.', 'data' => $purchaseOrder->load(['vendor', 'project', 'items.material'])]);
     }
 
@@ -160,5 +168,36 @@ class PurchaseOrderController extends Controller
         $purchaseOrder->delete();
 
         return response()->json(['message' => 'Purchase order deleted.']);
+    }
+
+    private function syncExpenseForPO(PurchaseOrder $po, int $userId): void
+    {
+        // Only create expense for received / partially_received POs
+        if (!in_array($po->status, ['received', 'partially_received'])) {
+            return;
+        }
+
+        $companyId = $po->company_id;
+
+        // Find or create a "Materials Purchase" expense category
+        $category = ExpenseCategory::firstOrCreate(
+            ['company_id' => $companyId, 'slug' => 'materials-purchase'],
+            ['name' => 'Materials Purchase', 'type' => 'direct']
+        );
+
+        // Idempotent: one expense per PO (keyed by reference_number = po_number)
+        Expense::firstOrCreate(
+            ['company_id' => $companyId, 'reference_number' => $po->po_number],
+            [
+                'project_id'          => $po->project_id,
+                'expense_category_id' => $category->id,
+                'description'         => 'Purchase Order ' . $po->po_number . ($po->vendor ? ' — ' . $po->vendor->name : ''),
+                'amount'              => floatval($po->total_amount),
+                'expense_date'        => $po->po_date ?? now()->toDateString(),
+                'payment_mode'        => 'bank_transfer',
+                'status'              => 'approved',
+                'created_by'          => $userId,
+            ]
+        );
     }
 }

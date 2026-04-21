@@ -22,10 +22,6 @@ import IndentList from './pages/indents/IndentList';
 import IndentForm from './pages/indents/IndentForm';
 import IndentDetail from './pages/indents/IndentDetail';
 
-import SubcontractorList from './pages/subcontractors/SubcontractorList';
-import SubcontractorForm from './pages/subcontractors/SubcontractorForm';
-import SubcontractorDetail from './pages/subcontractors/SubcontractorDetail';
-
 import VendorList from './pages/vendors/VendorList';
 import VendorDetail from './pages/vendors/VendorDetail';
 import VendorForm from './pages/vendors/VendorForm';
@@ -65,11 +61,6 @@ function App() {
             <Route path="/indents/new" element={<ProtectedRoute><IndentForm /></ProtectedRoute>} />
             <Route path="/indents/:id" element={<ProtectedRoute><IndentDetail /></ProtectedRoute>} />
             <Route path="/indents/:id/edit" element={<ProtectedRoute><IndentForm /></ProtectedRoute>} />
-
-            <Route path="/subcontractors" element={<ProtectedRoute><SubcontractorList /></ProtectedRoute>} />
-            <Route path="/subcontractors/new" element={<ProtectedRoute><SubcontractorForm /></ProtectedRoute>} />
-            <Route path="/subcontractors/:id" element={<ProtectedRoute><SubcontractorDetail /></ProtectedRoute>} />
-            <Route path="/subcontractors/:id/edit" element={<ProtectedRoute><SubcontractorForm /></ProtectedRoute>} />
 
             <Route path="/vendors" element={<ProtectedRoute><VendorList /></ProtectedRoute>} />
             <Route path="/vendors/new" element={<ProtectedRoute><VendorForm /></ProtectedRoute>} />

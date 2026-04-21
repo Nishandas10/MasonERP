@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Equipment;
 use App\Models\EquipmentAssignment;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\MaintenanceLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class EquipmentController extends Controller
 {
@@ -39,6 +42,27 @@ class EquipmentController extends Controller
 
         $equipment = Equipment::create(array_merge($validated, ['company_id' => $request->user()->company_id]));
 
+        // Auto-create expense if a purchase_value was recorded
+        if (!empty($validated['purchase_value']) && floatval($validated['purchase_value']) > 0) {
+            $companyId = $request->user()->company_id;
+            $category = ExpenseCategory::firstOrCreate(
+                ['company_id' => $companyId, 'slug' => 'equipment-purchase'],
+                ['name' => 'Equipment Purchase', 'type' => 'capital']
+            );
+
+            Expense::create([
+                'company_id'          => $companyId,
+                'expense_category_id' => $category->id,
+                'description'         => 'Equipment: ' . $equipment->name . ($equipment->code ? ' (' . $equipment->code . ')' : ''),
+                'amount'              => floatval($validated['purchase_value']),
+                'expense_date'        => $validated['purchase_date'] ?? now()->toDateString(),
+                'reference_number'    => 'EQP-' . $equipment->id,
+                'payment_mode'        => 'bank_transfer',
+                'status'              => 'approved',
+                'created_by'          => $request->user()->id,
+            ]);
+        }
+
         return response()->json(['message' => 'Equipment created.', 'data' => $equipment], 201);
     }
 
@@ -54,8 +78,17 @@ class EquipmentController extends Controller
         abort_if($equipment->company_id !== $request->user()->company_id, 403);
 
         $validated = $request->validate([
-            'name'   => 'sometimes|required|string|max:255',
-            'status' => 'nullable|in:available,deployed,maintenance,breakdown,retired',
+            'name'                => 'sometimes|required|string|max:255',
+            'code'                => 'nullable|string|max:50',
+            'type'                => 'sometimes|required|string|max:100',
+            'make'                => 'nullable|string|max:100',
+            'model'               => 'nullable|string|max:100',
+            'registration_number' => 'nullable|string|max:30',
+            'purchase_date'       => 'nullable|date',
+            'purchase_value'      => 'nullable|numeric|min:0',
+            'ownership'           => 'nullable|in:owned,rented,leased',
+            'rental_rate_per_day' => 'nullable|numeric|min:0',
+            'status'              => 'nullable|in:available,deployed,maintenance,breakdown,retired',
         ]);
 
         $equipment->update($validated);

@@ -41,9 +41,9 @@ function EquipmentForm({ initial, onSave, onClose }) {
             {...register('name', { required: true })} />
         </div>
         <div className="col-md-6">
-          <label className="form-label fw-semibold">Type</label>
-          <input className="form-control" placeholder="Excavator, Crane, Mixer..."
-            {...register('type')} />
+          <label className="form-label fw-semibold">Type *</label>
+          <input className={`form-control ${errors.type ? 'is-invalid' : ''}`} placeholder="Excavator, Crane, Mixer..."
+            {...register('type', { required: true })} />
         </div>
         <div className="col-md-4">
           <label className="form-label fw-semibold">Model</label>
@@ -68,8 +68,8 @@ function EquipmentForm({ initial, onSave, onClose }) {
           <input type="date" className="form-control" {...register('purchase_date')} />
         </div>
         <div className="col-md-6">
-          <label className="form-label fw-semibold">Purchase Cost (₹)</label>
-          <input type="number" min="0" step="0.01" className="form-control" {...register('purchase_cost')} />
+          <label className="form-label fw-semibold">Purchase Value (₹)</label>
+          <input type="number" min="0" step="0.01" className="form-control" {...register('purchase_value')} />
         </div>
         <div className="col-12 d-flex gap-2">
           <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
