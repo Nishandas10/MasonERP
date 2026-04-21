@@ -36,13 +36,12 @@ export default function IndentList() {
         </Link>
       ),
     },
-    { key: 'title', label: 'Title' },
     { key: 'project', label: 'Project', render: (r) => r.project?.name || '—' },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} /> },
     {
-      key: 'required_date',
+      key: 'required_by_date',
       label: 'Required By',
-      render: (r) => r.required_date || '—',
+      render: (r) => String(r.required_by_date || '').slice(0, 10) || '—',
     },
     {
       key: 'actions',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { indentApi } from '../../api/endpoints';
 import PageHeader from '../../components/common/PageHeader';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -53,7 +53,7 @@ export default function IndentDetail() {
     <div>
       <PageHeader
         title={indent.indent_number}
-        subtitle={indent.title}
+        subtitle={indent.project?.name}
         action={
           <div className="d-flex gap-2">
             {indent.status === 'draft' && (
@@ -69,6 +69,14 @@ export default function IndentDetail() {
                 <button className="btn btn-danger" onClick={() => setRejectModal(true)}>Reject</button>
               </>
             )}
+            {indent.status === 'approved' && (
+              <Link
+                className="btn btn-primary"
+                to={`/purchase-orders/new?indent_id=${id}&project_id=${indent.project_id}`}
+              >
+                <i className="bi bi-receipt me-1" />Create Purchase Order
+              </Link>
+            )}
             <button className="btn btn-outline-secondary" onClick={() => navigate('/indents')}>Back</button>
           </div>
         }
@@ -78,10 +86,11 @@ export default function IndentDetail() {
         {[
           { label: 'Status', value: <StatusBadge status={indent.status} /> },
           { label: 'Project', value: indent.project?.name || '—' },
-          { label: 'Required Date', value: indent.required_date || '—' },
-          { label: 'Created By', value: indent.creator?.name || '—' },
+          { label: 'Indent Date', value: String(indent.indent_date || '').slice(0, 10) || '—' },
+          { label: 'Required By', value: String(indent.required_by_date || '').slice(0, 10) || '—' },
+          { label: 'Created By', value: indent.requester?.name || '—' },
         ].map(({ label, value }) => (
-          <div key={label} className="col-md-3">
+          <div key={label} className="col-6 col-md">
             <div className="card border-0 shadow-sm p-3 text-center">
               <div className="text-muted small">{label}</div>
               <div className="fw-bold mt-1">{value}</div>
@@ -90,9 +99,9 @@ export default function IndentDetail() {
         ))}
       </div>
 
-      {indent.notes && (
+      {indent.remarks && (
         <div className="alert alert-light border mb-3">
-          <strong>Notes:</strong> {indent.notes}
+          <strong>Remarks:</strong> {indent.remarks}
         </div>
       )}
 
@@ -106,7 +115,7 @@ export default function IndentDetail() {
                 <th>Material</th>
                 <th>Quantity</th>
                 <th>Unit</th>
-                <th>Notes</th>
+                <th>Specifications</th>
               </tr>
             </thead>
             <tbody>
@@ -116,7 +125,7 @@ export default function IndentDetail() {
                   <td className="fw-semibold">{item.material?.name || '—'}</td>
                   <td>{item.quantity}</td>
                   <td>{item.unit || '—'}</td>
-                  <td className="text-muted">{item.notes || '—'}</td>
+                  <td className="text-muted">{item.specifications || '—'}</td>
                 </tr>
               ))}
             </tbody>

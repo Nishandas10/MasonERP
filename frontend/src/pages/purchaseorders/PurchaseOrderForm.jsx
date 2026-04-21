@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { purchaseOrderApi, vendorApi, projectApi, materialApi } from '../../api/endpoints';
+import { purchaseOrderApi, vendorApi, projectApi, materialApi, indentApi } from '../../api/endpoints';
 import PageHeader from '../../components/common/PageHeader';
 import { toast } from 'react-toastify';
 
@@ -16,11 +16,15 @@ export default function PurchaseOrderForm() {
   const [vendors, setVendors] = useState([]);
   const [projects, setProjects] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [linkedIndent, setLinkedIndent] = useState(null);
+
+  const indentId = searchParams.get('indent_id');
 
   const { register, handleSubmit, control, reset, watch, formState: { errors, isSubmitting } } = useForm({
     defaultValues: {
       vendor_id: searchParams.get('vendor_id') || '',
-      project_id: '',
+      project_id: searchParams.get('project_id') || '',
+      indent_id: indentId || '',
       po_date: new Date().toISOString().slice(0, 10),
       delivery_date: '',
       delivery_address: '',
@@ -39,9 +43,34 @@ export default function PurchaseOrderForm() {
       projectApi.list({ per_page: 100 }),
       materialApi.list({ per_page: 100 }),
     ]).then(([vRes, pRes, mRes]) => {
+      const mats = mRes.data.data?.data || [];
       setVendors(vRes.data.data?.data || []);
       setProjects(pRes.data.data?.data || []);
-      setMaterials(mRes.data.data?.data || []);
+      setMaterials(mats);
+
+      // Pre-fill from indent when coming from indent detail
+      if (!isEdit && indentId) {
+        indentApi.get(indentId).then((iRes) => {
+          const indent = iRes.data.data;
+          setLinkedIndent(indent);
+          reset((prev) => ({
+            ...prev,
+            project_id: indent.project_id || prev.project_id,
+            indent_id: indent.id,
+            items: (indent.items || []).map((item) => {
+              const mat = mats.find((m) => m.id === item.material_id);
+              return {
+                material_id: item.material_id,
+                quantity: item.quantity,
+                unit: item.unit || mat?.unit || '',
+                rate: mat?.standard_rate || '',
+                tax_percent: '0',
+                received_quantity: '0',
+              };
+            }),
+          }));
+        }).catch(() => toast.error('Failed to load indent.'));
+      }
     });
 
     if (isEdit) {
@@ -97,18 +126,20 @@ export default function PurchaseOrderForm() {
   const onSubmit = async (data) => {
     try {
       const vendorId = data.vendor_id;
+      let savedId = id;
       if (isEdit) {
         await purchaseOrderApi.update(id, data);
         toast.success('Purchase order updated.');
       } else {
-        await purchaseOrderApi.create(data);
+        const res = await purchaseOrderApi.create(data);
+        savedId = res.data.data?.id;
         toast.success('Purchase order created.');
       }
-      // Navigate back to vendor if we came from there
-      if (vendorId && !isEdit) {
+      // Navigate: back to indent if came from there, else vendor, else list
+      if (!isEdit && indentId) {
+        navigate(`/indents/${indentId}`);
+      } else if (vendorId && !isEdit) {
         navigate(`/vendors/${vendorId}`);
-      } else if (isEdit) {
-        navigate(`/purchase-orders/${id}`);
       } else {
         navigate('/purchase-orders');
       }
@@ -133,7 +164,22 @@ export default function PurchaseOrderForm() {
       <div className="card border-0 shadow-sm">
         <div className="card-body p-4">
           <form onSubmit={handleSubmit(onSubmit)}>
-            {/* Header */}
+            {/* Hidden indent_id */}
+            <input type="hidden" {...register('indent_id')} />
+
+            {/* Linked indent banner */}
+            {linkedIndent && (
+              <div className="alert alert-info d-flex align-items-center gap-2 mb-3">
+                <i className="bi bi-clipboard-check-fill" />
+                <div>
+                  <strong>From Indent:</strong> {linkedIndent.indent_number}
+                  {linkedIndent.remarks && <span className="ms-2 text-muted">— {linkedIndent.remarks}</span>}
+                  <span className="ms-2 badge bg-info text-dark">
+                    Required by {String(linkedIndent.required_by_date || '').slice(0, 10) || '—'}
+                  </span>
+                </div>
+              </div>
+            )}
             <div className="row g-3 mb-4">
               <div className="col-md-4">
                 <label className="form-label fw-semibold">Vendor *</label>
